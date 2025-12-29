@@ -1,0 +1,37 @@
+> Task :gradle-plugin:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:compileJava NO-SOURCE
+> Task :gradle-plugin:pluginDescriptors UP-TO-DATE
+> Task :gradle-plugin:processResources
+> Task :gradle-plugin:classes
+> Task :gradle-plugin:jar
+> Task :gradle-plugin:inspectClassesForKotlinIC UP-TO-DATE
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file 'D:\Mitra-Projects\localfix\node_modules\expo\android\build.gradle' line: 4
+
+* What went wrong:
+Could not compile build file 'D:\Mitra-Projects\localfix\node_modules\expo\android\build.gradle'.
+> startup failed:
+  build file 'D:\Mitra-Projects\localfix\node_modules\expo\android\build.gradle': 4: unable to resolve class expo.modules.plugin.gradle.ExpoModuleExtension
+   @ line 4, column 1.
+     import expo.modules.plugin.gradle.ExpoModuleExtension
+     ^
+  
+  build file 'D:\Mitra-Projects\localfix\node_modules\expo\android\build.gradle': 5: unable to resolve class expo.modules.plugin.Version
+   @ line 5, column 1.
+     import expo.modules.plugin.Version
+     ^
+  
+  2 errors
+
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 11s
+5 actionable tasks: 2 executed, 3 up-to-date
