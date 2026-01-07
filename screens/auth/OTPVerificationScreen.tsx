@@ -116,11 +116,35 @@ const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
     }
   };
 
-  const handleResendOTP = () => {
+  // Fetch device details on component mount for resend
+  const [deviceInfo, setDeviceInfo] = useState<any>(null);
+
+  useEffect(() => {
+    import('../../services').then(({ deviceService }) => {
+      deviceService.getDeviceDetails().then(setDeviceInfo);
+    });
+  }, []);
+
+  const handleResendOTP = async () => {
+    // 1. Reset state
     setTimer(60);
     setCanResend(false);
     setOtp(['', '', '', '']);
     inputRefs.current[0]?.focus();
+
+    // 2. Call API
+    try {
+      const phone = route.params?.phoneNumber;
+      if (phone && deviceInfo) {
+        console.log('Resending OTP to:', phone);
+        // We reuse authService.sendOTP which now accepts device details
+        await authService.sendOTP(phone, deviceInfo);
+        Alert.alert(t('auth.success', 'Success'), t('auth.otp_sent', 'New OTP sent successfully'));
+      }
+    } catch (e) {
+      console.error('Resend failed:', e);
+      // Don't alert error to avoid annoying user if network is flaky, timer is already reset
+    }
   };
 
   return (

@@ -3,6 +3,7 @@
  * Core HTTP client for making API requests with authentication and error handling
  */
 
+import { ToastAndroid, Platform, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL, API_TIMEOUT, HTTP_STATUS, ERROR_MESSAGES } from '../config/api.config';
 
@@ -139,9 +140,17 @@ class ApiClient {
         }
 
         if (!error.status) {
+            const msg = ERROR_MESSAGES.NETWORK_ERROR;
+            if (Platform.OS === 'android') {
+                ToastAndroid.show(msg, ToastAndroid.LONG);
+            } else {
+                // Determine if we should alert on iOS or just log, for now alert
+                // Alert.alert('Network Error', msg);
+            }
+
             return {
                 success: false,
-                error: ERROR_MESSAGES.NETWORK_ERROR,
+                error: msg,
             };
         }
 
@@ -179,19 +188,17 @@ class ApiClient {
      */
     async get<T = any>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
             const headers = await this.buildHeaders(options?.headers);
+            console.log(`🚀 GET Request to ${endpoint}`);
+            const startTime = Date.now();
 
             const response = await fetch(`${this.baseURL}${endpoint}`, {
                 method: 'GET',
                 headers,
-                signal: controller.signal,
                 ...options,
             });
 
-            clearTimeout(timeoutId);
+            console.log(`✅ GET ${endpoint} completed in ${Date.now() - startTime}ms`);
             return await this.handleResponse<T>(response);
         } catch (error) {
             return this.handleError(error);
@@ -207,22 +214,23 @@ class ApiClient {
         options?: RequestInit
     ): Promise<ApiResponse<T>> {
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+            console.log(`🚀 POST Request to ${endpoint}`);
 
             const headers = await this.buildHeaders(options?.headers);
+            const startTime = Date.now();
 
+            // Native fetch with no manual abort controller for now to fix 'Aborted' error
             const response = await fetch(`${this.baseURL}${endpoint}`, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify(body),
-                signal: controller.signal,
                 ...options,
             });
 
-            clearTimeout(timeoutId);
+            console.log(`✅ POST ${endpoint} completed in ${Date.now() - startTime}ms`);
             return await this.handleResponse<T>(response);
         } catch (error) {
+            console.error(`❌ POST ${endpoint} failed:`, error);
             return this.handleError(error);
         }
     }
@@ -236,20 +244,18 @@ class ApiClient {
         options?: RequestInit
     ): Promise<ApiResponse<T>> {
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
             const headers = await this.buildHeaders(options?.headers);
+            console.log(`🚀 PUT Request to ${endpoint}`);
+            const startTime = Date.now();
 
             const response = await fetch(`${this.baseURL}${endpoint}`, {
                 method: 'PUT',
                 headers,
                 body: JSON.stringify(body),
-                signal: controller.signal,
                 ...options,
             });
 
-            clearTimeout(timeoutId);
+            console.log(`✅ PUT ${endpoint} completed in ${Date.now() - startTime}ms`);
             return await this.handleResponse<T>(response);
         } catch (error) {
             return this.handleError(error);
@@ -265,20 +271,18 @@ class ApiClient {
         options?: RequestInit
     ): Promise<ApiResponse<T>> {
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
             const headers = await this.buildHeaders(options?.headers);
+            console.log(`🚀 PATCH Request to ${endpoint}`);
+            const startTime = Date.now();
 
             const response = await fetch(`${this.baseURL}${endpoint}`, {
                 method: 'PATCH',
                 headers,
                 body: JSON.stringify(body),
-                signal: controller.signal,
                 ...options,
             });
 
-            clearTimeout(timeoutId);
+            console.log(`✅ PATCH ${endpoint} completed in ${Date.now() - startTime}ms`);
             return await this.handleResponse<T>(response);
         } catch (error) {
             return this.handleError(error);
@@ -290,19 +294,17 @@ class ApiClient {
      */
     async delete<T = any>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
             const headers = await this.buildHeaders(options?.headers);
+            console.log(`🚀 DELETE Request to ${endpoint}`);
+            const startTime = Date.now();
 
             const response = await fetch(`${this.baseURL}${endpoint}`, {
                 method: 'DELETE',
                 headers,
-                signal: controller.signal,
                 ...options,
             });
 
-            clearTimeout(timeoutId);
+            console.log(`✅ DELETE ${endpoint} completed in ${Date.now() - startTime}ms`);
             return await this.handleResponse<T>(response);
         } catch (error) {
             return this.handleError(error);
@@ -318,9 +320,6 @@ class ApiClient {
         options?: RequestInit
     ): Promise<ApiResponse<T>> {
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
             const token = await this.getToken();
             const headers: HeadersInit = {
                 ...options?.headers,
@@ -330,15 +329,17 @@ class ApiClient {
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
+            console.log(`🚀 UPLOAD Request to ${endpoint}`);
+            const startTime = Date.now();
+
             const response = await fetch(`${this.baseURL}${endpoint}`, {
                 method: 'POST',
                 headers,
                 body: formData,
-                signal: controller.signal,
                 ...options,
             });
 
-            clearTimeout(timeoutId);
+            console.log(`✅ UPLOAD ${endpoint} completed in ${Date.now() - startTime}ms`);
             return await this.handleResponse<T>(response);
         } catch (error) {
             return this.handleError(error);

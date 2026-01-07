@@ -4,12 +4,11 @@
  */
 
 // Base URL for the API
-export const API_BASE_URL = __DEV__
-    ? 'http://localhost:5000/api/v1'  // Development (ADB Reverse)
-    : 'https://your-production-api.com/api/v1'; // Production
+// Base URL for the API
+export const API_BASE_URL = 'https://localfix.xyz/api/v1'; // Switched to Prod URL for testing
 
 // API timeout in milliseconds
-export const API_TIMEOUT = 30000;
+export const API_TIMEOUT = 60000;
 
 export const GOOGLE_MAPS_API_KEY = 'AIzaSyAkoADrG6gliF87nW8R1c6ICDNnuTYd8l8';
 

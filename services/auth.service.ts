@@ -126,9 +126,9 @@ class AuthService {
     /**
      * Send OTP for phone verification
      */
-    async sendOTP(phone: string): Promise<ApiResponse<{ otp: string }>> {
+    async sendOTP(phone: string, deviceDetails: any): Promise<ApiResponse<{ otp: string }>> {
         // This endpoint needs to be added to backend
-        return await apiClient.post('/auth/send-otp', { phone });
+        return await apiClient.post('/auth/send-otp', { phone, ...deviceDetails });
     }
 
     /**

@@ -12,6 +12,9 @@ import { useTranslation, TranslationProvider } from './useTranslation';
 import WelcomeScreen from './screens/auth/WelcomeScreen';
 import PhoneNumberScreen from './screens/auth/PhoneNumberScreen';
 import OTPVerificationScreen from './screens/auth/OTPVerificationScreen';
+import BlockingScreen from './screens/common/BlockingScreen';
+import { configService } from './services';
+import DeviceInfo from 'react-native-device-info';
 
 // Main App Screens
 import HomeScreen from './screens/app/HomeScreen';
@@ -113,14 +116,70 @@ const AppTabs = () => {
 };
 
 function AppContent() {
-  const { isLoggedIn, loading } = useAuth();
+  const { isLoggedIn, loading: authLoading } = useAuth();
+  const [appStatus, setAppStatus] = React.useState<{
+    loading: boolean;
+    maintenance: boolean;
+    forceUpdate: boolean;
+    message?: string;
+  }>({
+    loading: true,
+    maintenance: false,
+    forceUpdate: false
+  });
 
-  if (loading) {
+  React.useEffect(() => {
+    checkStatus();
+  }, []);
+
+  const checkStatus = async () => {
+    try {
+      // Safety check to prevent crash if native module isn't loaded yet (old binary)
+      let version = '1.0.0';
+      if (DeviceInfo && DeviceInfo.getVersion) {
+        try {
+          version = DeviceInfo.getVersion();
+        } catch (e) { console.warn('DeviceInfo error', e); }
+      }
+
+      // Create a promise that rejects after 5 seconds
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Config timeout')), 5000)
+      );
+
+      // Race the actual check against the timeout
+      const status: any = await Promise.race([
+        configService.checkAppStatus(version),
+        timeoutPromise
+      ]);
+
+      setAppStatus({
+        loading: false,
+        maintenance: status.maintenanceMode,
+        forceUpdate: status.forceUpdate,
+        message: status.message
+      });
+    } catch (error) {
+      console.error('Status check failed or timed out:', error);
+      // Allow app to load if check fails (fallback)
+      setAppStatus(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  if (authLoading || appStatus.loading) {
     return (
       <View style={{ flex: 1, backgroundColor: '#0A0E27', justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#00F5FF" />
       </View>
     );
+  }
+
+  if (appStatus.maintenance) {
+    return <BlockingScreen type="maintenance" message={appStatus.message} />;
+  }
+
+  if (appStatus.forceUpdate) {
+    return <BlockingScreen type="update" message={appStatus.message} />;
   }
 
   return (

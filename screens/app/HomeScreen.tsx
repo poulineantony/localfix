@@ -8,6 +8,9 @@ import {
   ScrollView,
   TextInput,
   Dimensions,
+  Platform,
+  PermissionsAndroid,
+  Alert,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -32,7 +35,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [userCoordinates, setUserCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
-    getCurrentLocation();
+    getCurrentLocation(); // No await needed, the function handles async internally
   }, []);
 
   // Fetch services when coordinates are available
@@ -100,11 +103,50 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     return colors[category] || '#00F5FF';
   };
 
-  const getCurrentLocation = () => {
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Permission',
+            message: 'LocalFix needs access to your location to show nearby services',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          }
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn('Permission error:', err);
+        return false;
+      }
+    }
+    return true; // iOS handles permissions differently
+  };
+
+  const getCurrentLocation = async () => {
     setLoadingLocation(true);
+    
+    // Request permission first
+    const hasPermission = await requestLocationPermission();
+    
+    if (!hasPermission) {
+      setLocation('Location permission denied');
+      setLoadingLocation(false);
+      Alert.alert(
+        'Location Permission Required',
+        'Please enable location permission in app settings to see nearby services.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    // Get location after permission is granted
     Geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
+        console.log('Location obtained:', latitude, longitude);
         setUserCoordinates({ latitude, longitude }); // Save coordinates to state
         fetchAddress(latitude, longitude);
       },
@@ -112,8 +154,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         console.log('Location error:', error);
         setLocation('Location unavailable');
         setLoadingLocation(false);
+        Alert.alert(
+          'Location Error',
+          'Unable to get your location. Please check if location services are enabled.',
+          [{ text: 'OK' }]
+        );
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
     );
   };
 

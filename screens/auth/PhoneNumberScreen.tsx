@@ -13,7 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { authService } from '../../services';
+import { authService, deviceService } from '../../services';
 import { useTranslation } from '../../useTranslation';
 
 interface PhoneNumberScreenProps {
@@ -36,7 +36,8 @@ const PhoneNumberScreen: React.FC<PhoneNumberScreenProps> = ({ navigation }) => 
     setError('');
 
     try {
-      const response = await authService.sendOTP(phoneNumber);
+      const deviceDetails = await deviceService.getDeviceDetails();
+      const response = await authService.sendOTP(phoneNumber, deviceDetails);
 
       if (response.success) {
         // Navigate to OTP verification screen with phone number
@@ -46,13 +47,21 @@ const PhoneNumberScreen: React.FC<PhoneNumberScreenProps> = ({ navigation }) => 
           otp: __DEV__ ? response.data?.otp : undefined
         });
       } else {
-        setError(response.error || 'Failed to send OTP. Please try again.');
-        Alert.alert('Error', response.error || 'Failed to send OTP. Please try again.');
+        const errorMsg = response.error || 'Failed to send OTP. Please try again.';
+        setError(errorMsg);
+
+        // If it is a timeout, we should guide the user
+        if (errorMsg.includes('timeout') || errorMsg.includes('Network request failed')) {
+          Alert.alert(t('common.error', 'Connection Error'), t('auth.timeout_msg', 'Server is taking too long to respond. Please check your internet or try again later.'));
+        } else {
+          Alert.alert(t('common.error', 'Error'), errorMsg);
+        }
       }
     } catch (err: any) {
-      const errorMessage = err.message || 'An error occurred. Please try again.';
+      console.error('Send OTP Error:', err);
+      const errorMessage = err.message || t('common.unknown_error', 'An error occurred. Please try again.');
       setError(errorMessage);
-      Alert.alert('Error', errorMessage);
+      Alert.alert(t('common.error', 'Error'), errorMessage);
     } finally {
       setLoading(false);
     }
